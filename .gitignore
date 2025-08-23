@@ -1,0 +1,12 @@
+/docker-data
+/venv
+/.ipynb_checkpoints
+*.ipynb
+test.*
+*.csv
+/log
+/warehouse
+.env
+__pycache__/
+*.pyc
+*.pyo

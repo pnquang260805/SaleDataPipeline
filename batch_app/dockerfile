@@ -1,0 +1,30 @@
+FROM python:3.12.0-slim
+
+WORKDIR /code
+
+RUN apt-get update && apt-get install -y openjdk-17-jdk wget && rm -rf /var/lib/apt/lists/*
+ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+ENV PATH="${JAVA_HOME}/bin:${PATH}"
+
+RUN mkdir /code/log
+COPY ./requirements.txt /code/requirements.txt
+RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt
+COPY . .
+
+
+RUN mkdir /batch_lib
+ARG LIB_DIR=/batch_lib
+ARG HADOOP_VERSION=3.3.4
+ARG AWSSDK_VERSION=2.32.19
+ARG AWS_BUNDLE_VERSION=1.12.262
+
+RUN wget -P ${LIB_DIR}/ https://repo1.maven.org/maven2/org/apache/iceberg/iceberg-spark-runtime-3.5_2.13/1.9.2/iceberg-spark-runtime-3.5_2.13-1.9.2.jar \
+    https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-aws/${HADOOP_VERSION}/hadoop-aws-${HADOOP_VERSION}.jar \
+    https://repo1.maven.org/maven2/software/amazon/awssdk/sts/${AWSSDK_VERSION}/sts-${AWSSDK_VERSION}.jar \
+    https://repo1.maven.org/maven2/software/amazon/awssdk/s3/${AWSSDK_VERSION}/s3-${AWSSDK_VERSION}.jar \
+    https://repo1.maven.org/maven2/software/amazon/awssdk/url-connection-client/${AWSSDK_VERSION}/url-connection-client-${AWSSDK_VERSION}.jar \
+    https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-common/${HADOOP_VERSION}/hadoop-common-${HADOOP_VERSION}.jar \
+    https://repo1.maven.org/maven2/com/amazonaws/aws-java-sdk-bundle/${AWS_BUNDLE_VERSION}/aws-java-sdk-bundle-${AWS_BUNDLE_VERSION}.jar
+
+ENV PYTHONPATH=/code
+CMD ["python3", "main.py"]

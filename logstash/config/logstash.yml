@@ -1,0 +1,6 @@
+# Cấu hình đường dẫn cho dữ liệu và log
+path.data: /usr/share/logstash/data
+path.logs: /usr/share/logstash/logs
+
+# Thư mục chứa các pipeline cấu hình
+path.config: /usr/share/logstash/pipeline

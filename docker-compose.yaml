@@ -1,0 +1,333 @@
+services:
+  jupyter:
+    build:
+      dockerfile: ./dockerfiles/jupyter.dockerfile
+      context: .
+      args:
+        openjdk_version: "17"
+        spark_version: "4.0.0"
+        hadoop_version: "3.2"
+        spark_download_url: "https://archive.apache.org/dist/spark/"
+    container_name: jupyter
+    ports:
+      - "8888:8888"
+    environment:
+      - JUPYTER_TOKEN=faketoken # dùng cái này để đăng nhập
+      - JUPYTER_PASSWORD=26082005qa
+      - JUPYTER_ENABLE_LAB=yes
+    networks:
+      - project-net
+    volumes:
+      - .:/home/jovyan/work
+
+  spark-master:
+    build:
+      dockerfile: ./dockerfiles/spark.dockerfile
+      context: .
+    container_name: spark-master
+    ports:
+      - "8080:8080" # Spark Master UI
+      - "7077:7077" # Spark Master Port
+    environment:
+      - SPARK_MODE=master
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+      - PYSPARK_PYTHON=/opt/conda/envs/py312/bin/python
+      - PYSPARK_DRIVER_PYTHON=/opt/conda/envs/py312/bin/python
+    networks:
+      - project-net
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1g
+  spark-worker:
+    build:
+      dockerfile: ./dockerfiles/spark.dockerfile
+      context: .
+    container_name: spark-worker
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+    networks:
+      - project-net
+    depends_on:
+      - spark-master
+    ports:
+      - "8081:8081" # Worker UI
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1g
+
+  superset:
+    build:
+      context: .
+      dockerfile: ./dockerfiles/superset.dockerfile
+    container_name: superset
+    ports:
+      - "8088:8088"
+    networks:
+      - project-net
+    environment:
+      - SUPERSET_SECRET_KEY=superset
+    
+
+  kafka:
+    image: bitnami/kafka:4.0.0
+    container_name: kafka
+    volumes:
+      - ./docker-data/kafka:/bitnami/kafka
+    environment:
+      - KAFKA_CFG_NODE_ID=0
+      - KAFKA_CFG_PROCESS_ROLES=controller,broker
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka:9093
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092,EXTERNAL://localhost:9094
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+      - "9094:9094"
+    networks:
+      - project-net
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1g
+  kafka-init:
+    image: bitnami/kafka:4.0.0
+    depends_on:
+      - kafka
+    command: |
+      kafka-topics.sh --create --if-not-exists --topic log_batch --bootstrap-server kafka:9092;
+      kafka-topics.sh --create --if-not-exists --topic redis_topic --bootstrap-server kafka:9092;
+      kafka-topics.sh --create --if-not-exists --topic log_stream --bootstrap-server kafka:9092;
+    
+    networks:
+      - project-net
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.13.2
+    container_name: logstash
+    ports:
+      - "5044:5044" # Cổng cho Beats (nếu bạn dùng Beats để gửi log)
+      - "9600:9600" # Cổng API của Logstash để quản lý
+    volumes:
+      - ./logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
+      - ./logstash/pipeline:/usr/share/logstash/pipeline:ro
+      - ./log:/usr/share/sample_log
+    networks:
+      - project-net
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    depends_on:
+      - kafka
+
+  spark-iceberg:
+    image: tabulario/spark-iceberg
+    container_name: spark-iceberg
+    networks:
+      project-net:
+      iceberg_net:
+    depends_on:
+      - rest
+      - minio
+    volumes:
+      - ./docker-data/warehouse:/home/iceberg/warehouse
+      - .:/home/iceberg/notebooks/notebooks
+    environment:
+      - AWS_ACCESS_KEY_ID=admin
+      - AWS_SECRET_ACCESS_KEY=password
+      - AWS_REGION=us-east-1
+    ports:
+      - 9888:8888
+      - 9080:8080
+      - 10000:10000
+      - 10001:10001
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+  rest:
+    image: apache/iceberg-rest-fixture
+    container_name: iceberg-rest
+    networks:
+      project-net:
+      iceberg_net:
+    ports:
+      - 8181:8181
+    environment:
+      - AWS_ACCESS_KEY_ID=admin
+      - AWS_SECRET_ACCESS_KEY=password
+      - AWS_REGION=us-east-1
+      - CATALOG_WAREHOUSE=s3://warehouse/
+      - CATALOG_IO__IMPL=org.apache.iceberg.aws.s3.S3FileIO
+      - CATALOG_S3_ENDPOINT=http://minio:9000
+  minio:
+    image: minio/minio
+    container_name: minio
+    environment:
+      - MINIO_ROOT_USER=admin
+      - MINIO_ROOT_PASSWORD=password
+      - MINIO_DOMAIN=minio
+    networks:
+      project-net:
+      iceberg_net:
+        aliases:
+          - warehouse.minio
+    ports:
+      - 9001:9001
+      - 9000:9000
+    command: ["server", "/data", "--console-address", ":9001"]
+    volumes:
+      - ./docker-data/minio:/data
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 1g
+    
+  mc:
+    depends_on:
+      - minio
+    image: minio/mc
+    container_name: mc
+    networks:
+      project-net:
+      iceberg_net:
+    environment:
+      - AWS_ACCESS_KEY_ID=admin
+      - AWS_SECRET_ACCESS_KEY=password
+      - AWS_REGION=us-east-1
+    entrypoint: |
+      /bin/sh -c "
+      until (/usr/bin/mc alias set minio http://minio:9000 admin password) do echo '...waiting...' && sleep 1; done;
+      /usr/bin/mc rm -r --force minio/warehouse;
+      /usr/bin/mc mb minio/warehouse;
+      /usr/bin/mc anonymous set public minio/warehouse;
+      /usr/bin/mc rm -r --force minio/bronze;
+      /usr/bin/mc mb minio/bronze;
+      /usr/bin/mc anonymous set public minio/bronze;
+      /usr/bin/mc rm -r --force minio/silver;
+      /usr/bin/mc mb minio/silver;
+      /usr/bin/mc anonymous set public minio/silver;
+      /usr/bin/mc rm -r --force minio/gold;
+      /usr/bin/mc mb minio/gold;
+      /usr/bin/mc anonymous set public minio/gold;
+      tail -f /dev/null
+      "
+
+  nifi:
+    image: apache/nifi:2.4.0
+    container_name: nifi
+    networks:
+      - project-net
+    ports:
+      - "8443:8443"
+    environment:
+      - SINGLE_USER_CREDENTIALS_USERNAME=admin
+      - SINGLE_USER_CREDENTIALS_PASSWORD=nifi1234@Abc
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1g
+  
+  redis:
+    image: redis:8.2.0-bookworm
+    container_name: redis
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 256M
+    volumes:
+      - ./docker-data/redis:/data
+    networks:
+      project-net:
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"  
+
+  redis-api:
+    build:
+      context: ./redis_api
+      dockerfile: redis_service.dockerfile
+    ports:
+      - "8000:80"
+    networks:
+      project-net:    
+    depends_on:
+      - redis
+
+  jobmanager:
+    build:
+      context: .
+      dockerfile: ./dockerfiles/flink.dockerfile
+    ports:
+      - "9081:8081"
+    command: jobmanager
+    environment:
+      FLINK_PROPERTIES: |
+        jobmanager.rpc.address: jobmanager
+        jobmanager.rpc.port: 6123
+        taskmanager.rpc.port: 6122
+        parallelism.default: 1   
+    networks:
+      project-net:   
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1g
+
+  taskmanager:
+    build:
+      context: .
+      dockerfile: ./dockerfiles/flink.dockerfile
+    depends_on:
+      - jobmanager
+    command: taskmanager
+    environment:
+      FLINK_PROPERTIES: |
+        jobmanager.rpc.address: jobmanager
+        jobmanager.rpc.port: 6123
+        taskmanager.rpc.port: 6122
+        taskmanager.numberOfTaskSlots: 1
+        parallelism.default: 1
+    networks:
+      project-net:  
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1g
+
+  batch-app:
+    build:
+      context: ./batch_app
+      dockerfile: ./dockerfile
+    container_name: batch-app
+    networks:
+      project-net: 
+    depends_on:
+      - redis
+      - redis-api
+      - minio
+      - spark-iceberg
+
+
+networks:
+  project-net:
+    driver: bridge
+  iceberg_net:
