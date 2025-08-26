@@ -313,18 +313,18 @@ services:
           cpus: '1'
           memory: 1g
 
-  batch-app:
-    build:
-      context: ./batch_app
-      dockerfile: ./dockerfile
-    container_name: batch-app
-    networks:
-      project-net: 
-    depends_on:
-      - redis
-      - redis-api
-      - minio
-      - spark-iceberg
+# batch-app:
+#   build:
+#     context: ./batch_app
+#     dockerfile: ./dockerfile
+#   container_name: batch-app
+#   networks:
+#     project-net: 
+#   depends_on:
+#     - redis
+#     - redis-api
+#     - minio
+#     - spark-iceberg
 
 
 networks:

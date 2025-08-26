@@ -76,15 +76,18 @@ class LogTransform(Transform):
             ]
         )
 
-        df = (
-            self.spark.read.format(input_format)
-            .option("multiline", "true")
-            .schema(schema)
-            .load(raw_data_url)
+        df = self.spark_service.read_file(
+            raw_data_url, "json", schema, multiline="true"
         )
-        df.write.format(saved_format).mode(kwargs.get("save_mode", "append")).save(
-            silver_dir
-        )
+        df = df.dropDuplicates()
+
+        fill_dict = {
+            "exception_message": "No exception",
+            "exception_type": "No Exception",
+        }
+
+        df = df.na.fill(fill_dict)
+        self.spark_service.write_file(silver_dir, df, "parquet")
         return df
 
     @log

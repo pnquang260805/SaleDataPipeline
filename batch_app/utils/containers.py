@@ -7,7 +7,7 @@ from services.common_service import CommonService
 from services.datetime_service import DatetimeService
 
 
-class Container(containers.DeclarativeContainer):
+class Containers(containers.DeclarativeContainer):
     config = providers.Configuration()
     spark_service = providers.Singleton(SparkService)
     common_service = providers.Factory(CommonService)
