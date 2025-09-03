@@ -22,6 +22,7 @@ class SparkService:
         self.spark = configure_spark_with_delta_pip(
             builder, extra_packages
         ).getOrCreate()
+        self.spark.sparkContext.setLogLevel("WARN")
 
     def get_spark(self):
         return self.spark

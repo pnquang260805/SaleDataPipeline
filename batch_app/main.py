@@ -51,6 +51,7 @@ def build_config(cfg: AppConfig):
         .set("spark.hadoop.fs.s3a.secret.key", cfg.SECRET_KEY)
         .set("spark.hadoop.fs.s3a.endpoint", cfg.s3_endpoint)
         .set("spark.hadoop.fs.s3a.path.style.access", "true")
+        .set("spark.sql.warehouse.dir", "s3a://warehouse")
     )
 
     return conf
@@ -84,7 +85,10 @@ def run_pipeline(container: Containers, services: Services, cfg: AppConfig):
     lookup_url = f"{cfg.redis_lookup_base}last_log"
     log_transform_service = container.transform_raw_service(lookup_url)
     df = log_transform_service.transform_bronze_to_silver(raw_url, silver_url)
-    print(df.show(5, truncate=False))
+    # print(df.show(5, truncate=False))
+
+    transform_date_service = container.transform_datetime_service()
+    transform_date_service.transform(df)
 
 
 @log
@@ -93,7 +97,7 @@ def main() -> None:
     conf = build_config(cfg)
 
     container = Containers()  # consider injecting this (for tests)
-    services = init_services(container, conf, cfg.master)
+    services = init_services(container, conf, cfg.master, cfg.extra_packages())
 
     try:
         run_pipeline(container, services, cfg)

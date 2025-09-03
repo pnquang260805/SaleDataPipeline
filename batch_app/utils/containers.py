@@ -5,6 +5,8 @@ from services.transform_raw_service import TransformRawService
 from services.spark_service import SparkService
 from services.common_service import CommonService
 from services.datetime_service import DatetimeService
+from services.delta_services import DeltaService
+from services.transform_datetime_service import TransformDate
 
 
 class Containers(containers.DeclarativeContainer):
@@ -14,4 +16,8 @@ class Containers(containers.DeclarativeContainer):
     datetime_service = providers.Singleton(DatetimeService)
     transform_raw_service = providers.Factory(
         TransformRawService, spark_service=spark_service
+    )
+    delta_service = providers.Factory(DeltaService, spark_service=spark_service)
+    transform_datetime_service = providers.Factory(
+        TransformDate, spark_service=spark_service, delta_service=delta_service
     )
