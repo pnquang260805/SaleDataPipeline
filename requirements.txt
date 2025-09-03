@@ -1,8 +1,7 @@
 pyspark==3.5.0
+delta-spark
 confluent-kafka
 dependency-injector
-boto3
 python-dotenv
-apache-flink
 redis
 fastapi[standard]

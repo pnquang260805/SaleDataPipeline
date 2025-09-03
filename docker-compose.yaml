@@ -12,7 +12,7 @@ services:
     ports:
       - "8888:8888"
     environment:
-      - JUPYTER_TOKEN=faketoken # dùng cái này để đăng nhập
+      - JUPYTER_TOKEN=26082005qa # dùng cái này để đăng nhập
       - JUPYTER_PASSWORD=26082005qa
       - JUPYTER_ENABLE_LAB=yes
     networks:
@@ -132,47 +132,6 @@ services:
     depends_on:
       - kafka
 
-  spark-iceberg:
-    image: tabulario/spark-iceberg
-    container_name: spark-iceberg
-    networks:
-      project-net:
-      iceberg_net:
-    depends_on:
-      - rest
-      - minio
-    volumes:
-      - ./docker-data/warehouse:/home/iceberg/warehouse
-      - .:/home/iceberg/notebooks/notebooks
-    environment:
-      - AWS_ACCESS_KEY_ID=admin
-      - AWS_SECRET_ACCESS_KEY=password
-      - AWS_REGION=us-east-1
-    ports:
-      - 9888:8888
-      - 9080:8080
-      - 10000:10000
-      - 10001:10001
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 512M
-  rest:
-    image: apache/iceberg-rest-fixture
-    container_name: iceberg-rest
-    networks:
-      project-net:
-      iceberg_net:
-    ports:
-      - 8181:8181
-    environment:
-      - AWS_ACCESS_KEY_ID=admin
-      - AWS_SECRET_ACCESS_KEY=password
-      - AWS_REGION=us-east-1
-      - CATALOG_WAREHOUSE=s3://warehouse/
-      - CATALOG_IO__IMPL=org.apache.iceberg.aws.s3.S3FileIO
-      - CATALOG_S3_ENDPOINT=http://minio:9000
   minio:
     image: minio/minio
     container_name: minio
@@ -212,17 +171,13 @@ services:
     entrypoint: |
       /bin/sh -c "
       until (/usr/bin/mc alias set minio http://minio:9000 admin password) do echo '...waiting...' && sleep 1; done;
-      /usr/bin/mc rm -r --force minio/warehouse;
-      /usr/bin/mc mb minio/warehouse;
+      /usr/bin/mc mb --ignore-existing minio/warehouse;
       /usr/bin/mc anonymous set public minio/warehouse;
-      /usr/bin/mc rm -r --force minio/bronze;
-      /usr/bin/mc mb minio/bronze;
+      /usr/bin/mc mb --ignore-existing minio/bronze;
       /usr/bin/mc anonymous set public minio/bronze;
-      /usr/bin/mc rm -r --force minio/silver;
-      /usr/bin/mc mb minio/silver;
+      /usr/bin/mc mb --ignore-existing minio/silver;
       /usr/bin/mc anonymous set public minio/silver;
-      /usr/bin/mc rm -r --force minio/gold;
-      /usr/bin/mc mb minio/gold;
+      /usr/bin/mc mb --ignore-existing minio/gold;
       /usr/bin/mc anonymous set public minio/gold;
       tail -f /dev/null
       "
@@ -269,49 +224,6 @@ services:
       project-net:    
     depends_on:
       - redis
-
-  jobmanager:
-    build:
-      context: .
-      dockerfile: ./dockerfiles/flink.dockerfile
-    ports:
-      - "9081:8081"
-    command: jobmanager
-    environment:
-      FLINK_PROPERTIES: |
-        jobmanager.rpc.address: jobmanager
-        jobmanager.rpc.port: 6123
-        taskmanager.rpc.port: 6122
-        parallelism.default: 1   
-    networks:
-      project-net:   
-    deploy:
-      resources:
-        limits:
-          cpus: '1'
-          memory: 1g
-
-  taskmanager:
-    build:
-      context: .
-      dockerfile: ./dockerfiles/flink.dockerfile
-    depends_on:
-      - jobmanager
-    command: taskmanager
-    environment:
-      FLINK_PROPERTIES: |
-        jobmanager.rpc.address: jobmanager
-        jobmanager.rpc.port: 6123
-        taskmanager.rpc.port: 6122
-        taskmanager.numberOfTaskSlots: 1
-        parallelism.default: 1
-    networks:
-      project-net:  
-    deploy:
-      resources:
-        limits:
-          cpus: '1'
-          memory: 1g
 
 # batch-app:
 #   build:

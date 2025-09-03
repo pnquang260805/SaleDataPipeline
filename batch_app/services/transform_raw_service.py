@@ -6,13 +6,12 @@ from pyspark.sql.types import *
 from pyspark.sql import DataFrame
 
 from utils.logger import log
-from interface.transform import Transform
 from services.common_service import CommonService
 from services.spark_service import SparkService
 
 
 @dataclass
-class LogTransform(Transform):
+class TransformRawService:
     lookup_url: str
     spark_service: SparkService
 
@@ -20,7 +19,7 @@ class LogTransform(Transform):
         self.spark = self.spark_service.get_spark()
 
     @log
-    def transform_raw(
+    def transform_bronze_to_silver(
         self,
         raw_data_url: str,
         silver_dir: str,
@@ -89,11 +88,3 @@ class LogTransform(Transform):
         df = df.na.fill(fill_dict)
         self.spark_service.write_file(silver_dir, df, "parquet")
         return df
-
-    @log
-    def transform_bronze(*args, **kwargs):
-        pass
-
-    @log
-    def transform_silver(*args, **kwargs):
-        pass

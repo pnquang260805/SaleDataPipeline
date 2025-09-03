@@ -22,8 +22,12 @@ class Services:
     common_service: object
 
 
-def init_services(container: Containers, conf: SparkConf, master: str) -> Services:
-    spark_service = container.spark_service(conf=conf, master=master)
+def init_services(
+    container: Containers, conf: SparkConf, master: str, extra_packages: List[str]
+) -> Services:
+    spark_service = container.spark_service(
+        conf=conf, master=master, extra_packages=extra_packages
+    )
     dt_service = container.datetime_service()
     common_service = container.common_service()
     return Services(
@@ -35,31 +39,18 @@ def init_services(container: Containers, conf: SparkConf, master: str) -> Servic
 
 def build_config(cfg: AppConfig):
     conf = SparkConf()
-    conf.set("spark.jars", ",".join(cfg.full_lib_path()))
+    # conf.set("spark.jars.packages", ",".join(cfg.extra_packages()))
 
-    # Config iceberg
     (
         conf.set(
-            "spark.sql.catalog.rest_catalog.io-impl",
-            "org.apache.iceberg.hadoop.HadoopFileIO",
+            "spark.sql.catalog.spark_catalog",
+            "org.apache.spark.sql.delta.catalog.DeltaCatalog",
         )
-        .set(
-            f"spark.sql.catalog.{cfg.catalog_name}",
-            "org.apache.iceberg.spark.SparkCatalog",
-        )
-        .set(f"spark.sql.catalog.{cfg.catalog_name}.type", "rest")
-        .set(f"spark.sql.catalog.{cfg.catalog_name}.uri", cfg.rest_iceberg_uri)
-        .set(f"spark.sql.catalog.{cfg.catalog_name}.warehouse", cfg.warehouse_dir)
-    )
-
-    # Config S3
-    (
-        conf.set("spark.hadoop.fs.s3a.access.key", cfg.ACCESS_KEY)
+        .set("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
+        .set("spark.hadoop.fs.s3a.access.key", cfg.ACCESS_KEY)
         .set("spark.hadoop.fs.s3a.secret.key", cfg.SECRET_KEY)
         .set("spark.hadoop.fs.s3a.endpoint", cfg.s3_endpoint)
         .set("spark.hadoop.fs.s3a.path.style.access", "true")
-        .set("spark.hadoop.fs.s3a.connection.ssl.enabled", "false")
-        .set("spark.hadoop.fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem")
     )
 
     return conf
@@ -91,8 +82,8 @@ def run_pipeline(container: Containers, services: Services, cfg: AppConfig):
     if not ok:
         return
     lookup_url = f"{cfg.redis_lookup_base}last_log"
-    log_transform_service = container.log_transform(lookup_url)
-    df = log_transform_service.transform_raw(raw_url, silver_url)
+    log_transform_service = container.transform_raw_service(lookup_url)
+    df = log_transform_service.transform_bronze_to_silver(raw_url, silver_url)
     print(df.show(5, truncate=False))
 
 
