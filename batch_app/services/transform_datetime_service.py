@@ -12,7 +12,7 @@ from services.delta_services import DeltaService
 @dataclass
 class TransformDate(TransformSilverService):
     delta_service: DeltaService
-    dim_date_loc: str = "s3a://warehouse/lob_db/dim_time"
+    dim_date_loc: str = "s3a://warehouse/default/dim_time"
 
     def __post_init__(self):
         self.logger = logging
@@ -36,6 +36,12 @@ class TransformDate(TransformSilverService):
             .withColumn("quarter", quarter(local_col_name))
             .drop("@timestamp")
             .dropDuplicates()
+            .withColumn("id", expr("uuid()"))
         )
+        if not self.delta_service.is_delta_table(self.dim_date_loc):
+            self.spark_service.write_file(
+                dir=self.dim_date_loc, df=time_df, format="delta", mode="overwrite"
+            )
+            return
         delta_table = self.delta_service.get_delta_table(self.dim_date_loc)
-        self.delta_service.merge(delta_table, time_df)
+        self.delta_service.merge(delta_table, time_df, "date")

@@ -38,11 +38,7 @@ services:
       - PYSPARK_DRIVER_PYTHON=/opt/conda/envs/py312/bin/python
     networks:
       - project-net
-    deploy:
-      resources:
-        limits:
-          cpus: '1'
-          memory: 1g
+
   spark-worker:
     build:
       dockerfile: ./dockerfiles/spark.dockerfile
@@ -51,17 +47,14 @@ services:
     environment:
       - SPARK_MODE=worker
       - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_CORES=1 
+      - SPARK_WORKER_MEMORY=1G 
     networks:
       - project-net
     depends_on:
       - spark-master
     ports:
       - "8081:8081" # Worker UI
-    deploy:
-      resources:
-        limits:
-          cpus: '1'
-          memory: 1g
 
   superset:
     build:

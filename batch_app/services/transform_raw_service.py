@@ -12,14 +12,13 @@ from services.spark_service import SparkService
 
 @dataclass
 class TransformRawService:
-    lookup_url: str
     spark_service: SparkService
 
     def __post_init__(self):
         self.spark = self.spark_service.get_spark()
 
     @log
-    def transform_bronze_to_silver(
+    def transform(
         self,
         raw_data_url: str,
         silver_dir: str,
