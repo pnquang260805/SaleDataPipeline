@@ -29,6 +29,7 @@ def spark_config():
         .set("spark.hadoop.fs.s3a.endpoint", cfg.s3_endpoint)
         .set("spark.hadoop.fs.s3a.path.style.access", "true")
         .set("spark.sql.warehouse.dir", "s3a://warehouse")
+        .set("spark.dynamicAllocation.shuffleTracking.enabled", "true")
     )
     return conf
 

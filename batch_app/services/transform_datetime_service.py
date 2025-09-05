@@ -36,7 +36,6 @@ class TransformDate(TransformSilverService):
             .withColumn("quarter", quarter(local_col_name))
             .drop("@timestamp")
             .dropDuplicates()
-            .withColumn("id", expr("uuid()"))
         )
         if not self.delta_service.is_delta_table(self.dim_date_loc):
             self.spark_service.write_file(
