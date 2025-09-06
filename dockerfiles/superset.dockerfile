@@ -19,6 +19,7 @@ RUN pip install --no-cache-dir \
     thrift \
     thrift-sasl \
     sasl
+
 ENTRYPOINT ["./superset.sh"]
 
 USER 1001

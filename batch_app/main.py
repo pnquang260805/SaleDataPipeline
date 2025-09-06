@@ -24,6 +24,7 @@ def spark_config():
             "org.apache.spark.sql.delta.catalog.DeltaCatalog",
         )
         .set("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
+        .set("spark.databricks.delta.metastore.type", "filesystem")
         .set("spark.hadoop.fs.s3a.access.key", cfg.ACCESS_KEY)
         .set("spark.hadoop.fs.s3a.secret.key", cfg.SECRET_KEY)
         .set("spark.hadoop.fs.s3a.endpoint", cfg.s3_endpoint)
