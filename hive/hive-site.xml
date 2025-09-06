@@ -1,0 +1,23 @@
+<configuration>
+  <property>
+    <name>hive.execution.engine</name>
+    <value>mr</value>
+    <description>Chạy Hive với engine MapReduce thay vì Tez</description>
+  </property>
+  <property>
+    <name>javax.jdo.option.ConnectionDriverName</name>
+    <value>com.mysql.jdbc.Driver</value>
+  </property>
+  <property>
+    <name>javax.jdo.option.ConnectionURL</name>
+    <value>jdbc:mysql://metastore-db:3306/metastore?createDatabaseIfNotExist=true</value>
+  </property>
+  <property>
+    <name>javax.jdo.option.ConnectionUserName</name>
+    <value>hive</value>
+  </property>
+  <property>
+    <name>javax.jdo.option.ConnectionPassword</name>
+    <value>hivepassword</value>
+  </property>
+</configuration>
