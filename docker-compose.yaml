@@ -225,19 +225,30 @@ services:
     depends_on:
       - redis
 
-# batch-app:
-#   build:
-#     context: ./batch_app
-#     dockerfile: ./dockerfile
-#   container_name: batch-app
-#   networks:
-#     project-net: 
-#   depends_on:
-#     - redis
-#     - redis-api
-#     - minio
-#     - spark-iceberg
-
+  # batch-app:
+  #   build:
+  #     context: ./batch_app
+  #     dockerfile: ./dockerfile
+  #   container_name: batch-app
+  #   networks:
+  #     project-net: 
+  #   depends_on:
+  #     - redis
+  #     - redis-api
+  #     - minio
+  #     - spark-iceberg
+  trino:
+    image: trinodb/trino:475
+    container_name: trino
+    depends_on:
+      - minio
+      - hive-metastore
+    ports:
+      - "8085:8080"   # Trino UI & HTTP
+    networks:
+      - project-net
+    volumes:
+      - ./trino/catalog:/etc/trino/catalog
 
 networks:
   project-net:
