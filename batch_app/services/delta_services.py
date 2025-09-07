@@ -24,10 +24,10 @@ class DeltaService:
         return res
 
     @log
-    def merge(self, target: DeltaTable, source: DataFrame, conditions_col: str) -> None:
-        conditions = f"t.{conditions_col} = s.{conditions_col}"
+    def merge(self, target: DeltaTable, source: DataFrame, conditions: str) -> None:
         (
             target.alias("t")
+            .merge(source.alias("s"), conditions)
             .merge(source.alias("s"), conditions)
             .whenNotMatchedInsert(values=self.__build_values(source))
             .execute()

@@ -12,7 +12,7 @@ services:
     ports:
       - "8888:8888"
     environment:
-      - JUPYTER_TOKEN=26082005qa # dùng cái này để đăng nhập
+      - JUPYTER_TOKEN=26082005qa 
       - JUPYTER_PASSWORD=26082005qa
       - JUPYTER_ENABLE_LAB=yes
     networks:
@@ -26,8 +26,8 @@ services:
       context: .
     container_name: spark-master
     ports:
-      - "8080:8080" # Spark Master UI
-      - "7077:7077" # Spark Master Port
+      - "8080:8080" 
+      - "7077:7077"
     environment:
       - SPARK_MODE=master
       - SPARK_RPC_AUTHENTICATION_ENABLED=no
@@ -90,42 +90,42 @@ services:
     ports:
       - "8083:8081" # Worker UI
 
-  spark-thrift:
-    build:
-      dockerfile: ./dockerfiles/thrift.dockerfile
-      context: .
-    container_name: spark-thrift
-    depends_on:
-      - spark-master
-      - spark-worker
-      - minio
-      - hive-metastore
-    ports:
-      - "10000:10000"   
-      - "10001:10001"   
-    volumes:
-      - ./hive/hive-site.xml:/opt/bitnami/spark/conf/hive-site.xml
-      - ./docker-data/jars/mysql-connector-j-8.0.33.jar:/opt/bitnami/spark/jars/mysql-connector-java.jar
-      - ./docker-data/jars/delta-storage-3.3.2.jar:/opt/bitnami/spark/jars/delta-storage-3.3.2.jar
-    command: >
-      /opt/bitnami/spark/sbin/start-thriftserver.sh
-      --master spark://spark-master:7077
-      --conf spark.hadoop.hive.metastore.uris=thrift://hive-metastore:9083
-      --conf spark.hadoop.fs.s3a.endpoint=http://minio:9000
-      --conf spark.hadoop.fs.s3a.access.key=admin
-      --conf spark.hadoop.fs.s3a.secret.key=password
-      --conf spark.hadoop.fs.s3a.path.style.access=true
-      --conf spark.hadoop.fs.s3a.impl=org.apache.hadoop.fs.s3a.S3AFileSystem
-      --conf spark.executor.cores=1
-      --conf spark.cores.max=1
-      --conf spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension
-      --conf spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog
-    # --conf spark.executor.cores=1
-    # --conf spark.cores.max=1
-    # Limit executor
-    # --conf spark.hadoop.hive.metastore.uris=thrift://hive-metastore:9083
-    networks:
-      project-net:
+  # spark-thrift:
+  #   build:
+  #     dockerfile: ./dockerfiles/thrift.dockerfile
+  #     context: .
+  #   container_name: spark-thrift
+  #   depends_on:
+  #     - spark-master
+  #     - spark-worker
+  #     - minio
+  #     - hive-metastore
+  #   ports:
+  #     - "10000:10000"   
+  #     - "10001:10001"   
+  #   volumes:
+  #     - ./hive/hive-site.xml:/opt/bitnami/spark/conf/hive-site.xml
+  #     - ./docker-data/jars/mysql-connector-j-8.0.33.jar:/opt/bitnami/spark/jars/mysql-connector-java.jar
+  #     - ./docker-data/jars/delta-storage-3.3.2.jar:/opt/bitnami/spark/jars/delta-storage-3.3.2.jar
+  #   command: >
+  #     /opt/bitnami/spark/sbin/start-thriftserver.sh
+  #     --master spark://spark-master:7077
+  #     --conf spark.hadoop.hive.metastore.uris=thrift://hive-metastore:9083
+  #     --conf spark.hadoop.fs.s3a.endpoint=http://minio:9000
+  #     --conf spark.hadoop.fs.s3a.access.key=admin
+  #     --conf spark.hadoop.fs.s3a.secret.key=password
+  #     --conf spark.hadoop.fs.s3a.path.style.access=true
+  #     --conf spark.hadoop.fs.s3a.impl=org.apache.hadoop.fs.s3a.S3AFileSystem
+  #     --conf spark.executor.cores=1
+  #     --conf spark.cores.max=1
+  #     --conf spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension
+  #     --conf spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog
+  #   # --conf spark.executor.cores=1
+  #   # --conf spark.cores.max=1
+  #   # Limit executor
+  #   # --conf spark.hadoop.hive.metastore.uris=thrift://hive-metastore:9083
+  #   networks:
+  #     project-net:
 
   superset:
     build:
@@ -182,8 +182,8 @@ services:
     image: docker.elastic.co/logstash/logstash:8.13.2
     container_name: logstash
     ports:
-      - "5044:5044" # Cổng cho Beats (nếu bạn dùng Beats để gửi log)
-      - "9600:9600" # Cổng API của Logstash để quản lý
+      - "5044:5044" 
+      - "9600:9600" # API gateway
     volumes:
       - ./logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
       - ./logstash/pipeline:/usr/share/logstash/pipeline:ro
@@ -284,6 +284,7 @@ services:
     build:
       context: ./redis_api
       dockerfile: redis_service.dockerfile
+    container_name: redis_api
     ports:
       - "8000:80"
     networks:
@@ -291,39 +292,45 @@ services:
     depends_on:
       - redis
 
-  metastore-db:
-    image: mysql:8.0
-    container_name: metastore-db
-    environment:
-      MYSQL_ROOT_PASSWORD: rootpassword
-      MYSQL_DATABASE: metastore
-      MYSQL_USER: hive
-      MYSQL_PASSWORD: hivepassword
+  trino:
+    hostname: trino
+    container_name: trino
+    image: 'trinodb/trino:351'
     ports:
-      - "3306:3306"
-    command: >
-      --default-authentication-plugin=mysql_native_password
+      - '8086:8080'
     volumes:
-      - ./docker-data/mysql:/var/lib/mysql
+      - ./etc:/usr/lib/trino/etc:ro
+    networks:
+      project-net:  
+
+  mariadb:
+    hostname: mariadb
+    container_name: mariadb
+    image: mariadb:10.5.8
+    ports:
+      - 3306:3306
+    environment:
+      MYSQL_ROOT_PASSWORD: admin
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: admin
+      MYSQL_DATABASE: metastore_db
     networks:
       project-net:  
 
   hive-metastore:
-    build:
-      context: .
-      dockerfile: ./dockerfiles/hive.dockerfile
+    hostname: hive-metastore
     container_name: hive-metastore
-    depends_on:
-      - metastore-db
+    image: 'bitsondatadev/hive-metastore:latest'
     ports:
-      - "9083:9083"
-    networks:
-      project-net: 
+      - '9083:9083' # Metastore Thrift
     volumes:
-      - ./docker-data/hive_metastore_data:/opt/hive/data
-      - ./docker-data/jars/mysql-connector-j-8.0.33.jar:/opt/hive/lib/mysql-connector-java.jar
-      - ./hive/hive-site.xml:/opt/hive/conf/hive-site.xml
-    
+      - ./conf/metastore-site.xml:/opt/apache-hive-metastore-3.0.0-bin/conf/metastore-site.xml:ro
+    environment:
+      METASTORE_DB_HOSTNAME: mariadb
+    depends_on:
+      - mariadb
+    networks:
+      project-net:  
 
 networks:
   project-net:
