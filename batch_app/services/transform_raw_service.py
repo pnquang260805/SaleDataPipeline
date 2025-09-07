@@ -53,7 +53,7 @@ class TransformRawService:
                 StructField(
                     "log",
                     StructType(
-                        [  # thêm vào
+                        [
                             StructField(
                                 "file",
                                 StructType([StructField("path", StringType(), True)]),
@@ -69,7 +69,7 @@ class TransformRawService:
                 StructField("server_ip", StringType(), True),
                 StructField("service", StringType(), True),
                 StructField("status", StringType(), True),
-                StructField("timestamp", StringType(), True),  # để StringType
+                StructField("timestamp", StringType(), True),
                 StructField("type", StringType(), True),
                 StructField("user_agent", StringType(), True),
             ]

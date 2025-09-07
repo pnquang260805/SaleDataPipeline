@@ -12,7 +12,7 @@ services:
     ports:
       - "8888:8888"
     environment:
-      - JUPYTER_TOKEN=26082005qa # dùng cái này để đăng nhập
+      - JUPYTER_TOKEN=26082005qa 
       - JUPYTER_PASSWORD=26082005qa
       - JUPYTER_ENABLE_LAB=yes
     networks:
@@ -26,8 +26,8 @@ services:
       context: .
     container_name: spark-master
     ports:
-      - "8080:8080" # Spark Master UI
-      - "7077:7077" # Spark Master Port
+      - "8080:8080" 
+      - "7077:7077"
     environment:
       - SPARK_MODE=master
       - SPARK_RPC_AUTHENTICATION_ENABLED=no
@@ -116,8 +116,8 @@ services:
     image: docker.elastic.co/logstash/logstash:8.13.2
     container_name: logstash
     ports:
-      - "5044:5044" # Cổng cho Beats (nếu bạn dùng Beats để gửi log)
-      - "9600:9600" # Cổng API của Logstash để quản lý
+      - "5044:5044" 
+      - "9600:9600" # API gateway
     volumes:
       - ./logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
       - ./logstash/pipeline:/usr/share/logstash/pipeline:ro
@@ -225,30 +225,7 @@ services:
     depends_on:
       - redis
 
-  # batch-app:
-  #   build:
-  #     context: ./batch_app
-  #     dockerfile: ./dockerfile
-  #   container_name: batch-app
-  #   networks:
-  #     project-net: 
-  #   depends_on:
-  #     - redis
-  #     - redis-api
-  #     - minio
-  #     - spark-iceberg
-  trino:
-    image: trinodb/trino:475
-    container_name: trino
-    depends_on:
-      - minio
-      - hive-metastore
-    ports:
-      - "8085:8080"   # Trino UI & HTTP
-    networks:
-      - project-net
-    volumes:
-      - ./trino/catalog:/etc/trino/catalog
+
 
 networks:
   project-net:

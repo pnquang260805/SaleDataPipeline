@@ -16,23 +16,18 @@ class DeltaService:
         self.spark = self.spark_service.get_spark()
         self.logger = logging
 
-    def __build_conditions(self, df: DataFrame):
-        cols = df.columns
-        return " AND ".join([f"t.{col} = s.{col}" for col in cols])
-
     def __build_values(self, df: DataFrame):
         cols = df.columns
         res = {}
         for col in cols:
             res[col] = f"s.{col}"
-        res["id"] = "uuid()"
         return res
 
     @log
-    def merge(self, target: DeltaTable, source: DataFrame) -> None:
+    def merge(self, target: DeltaTable, source: DataFrame, conditions: str) -> None:
         (
             target.alias("t")
-            .merge(source.alias("s"), f"{self.__build_conditions(source)}")
+            .merge(source.alias("s"), conditions)
             .whenNotMatchedInsert(values=self.__build_values(source))
             .execute()
         )
