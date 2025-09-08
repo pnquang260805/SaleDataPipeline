@@ -7,6 +7,7 @@ from services.common_service import CommonService
 from services.datetime_service import DatetimeService
 from services.delta_services import DeltaService
 from services.transform_datetime_service import TransformDate
+from services.ip_transform_service import IpTransformService
 
 
 class Containers(containers.DeclarativeContainer):
@@ -21,3 +22,4 @@ class Containers(containers.DeclarativeContainer):
     transform_datetime_service = providers.Factory(
         TransformDate, spark_service=spark_service, delta_service=delta_service
     )
+    ip_service = providers.Factory(IpTransformService, delta_service=delta_service)

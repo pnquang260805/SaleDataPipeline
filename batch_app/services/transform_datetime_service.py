@@ -35,6 +35,7 @@ class TransformDate(TransformSilverService):
             .withColumn("day", day(local_col_name))
             .withColumn("quarter", quarter(local_col_name))
             .drop("@timestamp")
+            .drop(local_col_name)
             .dropDuplicates()
         )
         if not self.delta_service.is_delta_table(self.dim_date_loc):
