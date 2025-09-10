@@ -89,44 +89,7 @@ services:
       - spark-master
     ports:
       - "8083:8081" # Worker UI
-
-  # spark-thrift:
-  #   build:
-  #     dockerfile: ./dockerfiles/thrift.dockerfile
-  #     context: .
-  #   container_name: spark-thrift
-  #   depends_on:
-  #     - spark-master
-  #     - spark-worker
-  #     - minio
-  #     - hive-metastore
-  #   ports:
-  #     - "10000:10000"   
-  #     - "10001:10001"   
-  #   volumes:
-  #     - ./hive/hive-site.xml:/opt/bitnami/spark/conf/hive-site.xml
-  #     - ./docker-data/jars/mysql-connector-j-8.0.33.jar:/opt/bitnami/spark/jars/mysql-connector-java.jar
-  #     - ./docker-data/jars/delta-storage-3.3.2.jar:/opt/bitnami/spark/jars/delta-storage-3.3.2.jar
-  #   command: >
-  #     /opt/bitnami/spark/sbin/start-thriftserver.sh
-  #     --master spark://spark-master:7077
-  #     --conf spark.hadoop.hive.metastore.uris=thrift://hive-metastore:9083
-  #     --conf spark.hadoop.fs.s3a.endpoint=http://minio:9000
-  #     --conf spark.hadoop.fs.s3a.access.key=admin
-  #     --conf spark.hadoop.fs.s3a.secret.key=password
-  #     --conf spark.hadoop.fs.s3a.path.style.access=true
-  #     --conf spark.hadoop.fs.s3a.impl=org.apache.hadoop.fs.s3a.S3AFileSystem
-  #     --conf spark.executor.cores=1
-  #     --conf spark.cores.max=1
-  #     --conf spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension
-  #     --conf spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog
-  #   # --conf spark.executor.cores=1
-  #   # --conf spark.cores.max=1
-  #   # Limit executor
-  #   # --conf spark.hadoop.hive.metastore.uris=thrift://hive-metastore:9083
-  #   networks:
-  #     project-net:
-
+      
   superset:
     build:
       context: .
@@ -166,6 +129,7 @@ services:
         limits:
           cpus: '1'
           memory: 1g
+
   kafka-init:
     image: bitnami/kafka:4.0.0
     depends_on:
@@ -174,6 +138,9 @@ services:
       kafka-topics.sh --create --if-not-exists --topic log_batch --bootstrap-server kafka:9092;
       kafka-topics.sh --create --if-not-exists --topic redis_topic --bootstrap-server kafka:9092;
       kafka-topics.sh --create --if-not-exists --topic log_stream --bootstrap-server kafka:9092;
+      kafka-topics.sh --create --if-not-exists --topic my_connect_configs --bootstrap-server kafka:9092;
+      kafka-topics.sh --create --if-not-exists --topic my_connect_offsets --bootstrap-server kafka:9092;
+      kafka-topics.sh --create --if-not-exists --topic my_connect_statuses --bootstrap-server kafka:9092;
     
     networks:
       - project-net
@@ -269,6 +236,20 @@ services:
     networks:
       project-net:  
 
+  backend_db:
+    hostname: backend_db
+    container_name: backend_db
+    image: mariadb:10.5.8
+    ports:
+      - 3307:3306
+    environment:
+      MYSQL_ROOT_PASSWORD: admin
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: admin
+      MYSQL_DATABASE: commerce_db
+    networks:
+      project-net:  
+
   hive-metastore:
     hostname: hive-metastore
     container_name: hive-metastore
@@ -283,6 +264,27 @@ services:
       - mariadb
     networks:
       project-net:  
+
+  debezium-connect:
+    image: debezium/connect:2.7.0.Final
+    container_name: debezium-connect
+    depends_on:
+    - kafka
+    - backend_db
+    environment:
+      BOOTSTRAP_SERVERS: kafka:9092
+      GROUP_ID: 1
+      CONFIG_STORAGE_TOPIC: my_connect_configs
+      OFFSET_STORAGE_TOPIC: my_connect_offsets
+      STATUS_STORAGE_TOPIC: my_connect_statuses
+      KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      VALUE_CONVERTER_SCHEMAS_ENABLE: "false"
+      KEY_CONVERTER_SCHEMAS_ENABLE: "false"
+    ports:
+    - "8083:8083"
+    networks:
+      project-net: 
 
 networks:
   project-net:
