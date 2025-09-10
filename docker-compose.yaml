@@ -178,26 +178,6 @@ services:
     networks:
       - project-net
 
-  logstash:
-    image: docker.elastic.co/logstash/logstash:8.13.2
-    container_name: logstash
-    ports:
-      - "5044:5044" 
-      - "9600:9600" # API gateway
-    volumes:
-      - ./logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
-      - ./logstash/pipeline:/usr/share/logstash/pipeline:ro
-      - ./log:/usr/share/sample_log
-    networks:
-      - project-net
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 512M
-    depends_on:
-      - kafka
-
   minio:
     image: minio/minio
     container_name: minio
@@ -263,34 +243,6 @@ services:
         limits:
           cpus: '1'
           memory: 1g
-  
-  redis:
-    image: redis:8.2.0-bookworm
-    container_name: redis
-    deploy:
-      resources:
-        limits:
-          cpus: '1'
-          memory: 256M
-    volumes:
-      - ./docker-data/redis:/data
-    networks:
-      project-net:
-    command: ["redis-server", "--appendonly", "yes"]
-    ports:
-      - "6379:6379"  
-
-  redis-api:
-    build:
-      context: ./redis_api
-      dockerfile: redis_service.dockerfile
-    container_name: redis_api
-    ports:
-      - "8000:80"
-    networks:
-      project-net:    
-    depends_on:
-      - redis
 
   trino:
     hostname: trino

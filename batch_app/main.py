@@ -47,24 +47,13 @@ def main() -> None:
     common_service = container.common_service()
     transform_datetime_service = container.transform_datetime_service()
     transform_raw_service = container.transform_raw_service()
-    ip_service = container.ip_service()
-
-    # print(spark_service.get_spark().sparkContext.master)
 
     yesterday = datetime_service.get_yesterday()
-
-    last_log = common_service.check_lookup(
-        f"http://redis-api:80/api/redis/get-key?key=last_log", key="value"
-    )
-    if last_log != yesterday:
-        return
 
     url = f"s3a://bronze/log/{yesterday}/*.json"
 
     df = transform_raw_service.transform(url, f"s3a://silver/{yesterday}")
-    # print(df.show(5, truncate=False))
     transform_datetime_service.transform(df)
-    ip_service.transform(df)
 
 
 if __name__ == "__main__":
