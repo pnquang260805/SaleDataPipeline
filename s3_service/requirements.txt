@@ -1,0 +1,4 @@
+fastapi[standard]
+pydantic
+boto3
+python-dotenv

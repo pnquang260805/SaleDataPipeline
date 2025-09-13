@@ -158,8 +158,8 @@ services:
         aliases:
           - warehouse.minio
     ports:
-      - 9001:9001
-      - 9000:9000
+      - "9001:9001"
+      - "9000:9000"
     command: ["server", "/data", "--console-address", ":9001"]
     volumes:
       - ./docker-data/minio:/data
@@ -282,9 +282,19 @@ services:
       VALUE_CONVERTER_SCHEMAS_ENABLE: "false"
       KEY_CONVERTER_SCHEMAS_ENABLE: "false"
     ports:
-    - "8083:8083"
+    - "7083:8083"
     networks:
       project-net: 
+
+  s3-service:
+    container_name: s3_services
+    build:
+      context: ./s3_service
+      dockerfile: s3.Dockerfile
+    networks:
+      project-net:
+    env_file:
+      - ./s3_service/.env
 
 networks:
   project-net:

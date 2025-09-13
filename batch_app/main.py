@@ -50,10 +50,10 @@ def main() -> None:
 
     yesterday = datetime_service.get_yesterday()
 
-    url = f"s3a://bronze/log/{yesterday}/*.json"
+    url = f"s3a://bronze/orders/{yesterday}/*.json"
 
-    df = transform_raw_service.transform(url, f"s3a://silver/{yesterday}")
-    transform_datetime_service.transform(df)
+    # df = transform_raw_service.transform(url, f"s3a://silver/{yesterday}")
+    transform_datetime_service.transform()
 
 
 if __name__ == "__main__":
