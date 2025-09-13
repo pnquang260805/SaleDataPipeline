@@ -31,6 +31,8 @@ def spark_config():
         .set("spark.hadoop.fs.s3a.path.style.access", "true")
         .set("spark.sql.warehouse.dir", "s3a://warehouse")
         .set("spark.dynamicAllocation.shuffleTracking.enabled", "true")
+        .set("spark.executor.cores", "1")
+        .set("spark.cores.max", "1")
     )
     return conf
 

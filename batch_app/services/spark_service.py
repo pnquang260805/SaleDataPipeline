@@ -47,4 +47,4 @@ class SparkService:
 
     @log
     def write_delta_table(self, df : DataFrame, delta_table_path : str, mode : str = "overwrite"):
-            df.write.format("delta").mode(mode).saveAsTable(delta_table_path)
+            df.write.format("delta").mode(mode).save(delta_table_path)

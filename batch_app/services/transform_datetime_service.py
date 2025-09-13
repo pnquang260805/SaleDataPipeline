@@ -13,7 +13,8 @@ from services.spark_service import SparkService
 @dataclass
 class TransformDate(TransformSilverService):
     delta_service: DeltaService
-    dim_date_loc: str = "s3a://warehouse/default/dim_time"
+    dim_date_loc: str = "s3a://warehouse/default/dim_date"
+    sql_dim_loc : str = "default.dim_date"
     spark_service : SparkService
 
     def __post_init__(self):
@@ -43,7 +44,7 @@ class TransformDate(TransformSilverService):
         }
         df = self.spark.createDataFrame([data])
         alternate_key_col = "FullDateAlternateKey"
-        dim_time_df = (df.withColumn("DayNumberOfWeek", dayofweek(alternate_key_col))
+        dim_date_df = (df.withColumn("DayNumberOfWeek", dayofweek(alternate_key_col))
                        .withColumn("DayNameOfWeek", date_format(alternate_key_col, "EEEE"))
                        .withColumn("DayNumberOfMonth", dayofmonth(alternate_key_col))
                        .withColumn("DayNumberOfYear", dayofyear(alternate_key_col))
@@ -55,6 +56,6 @@ class TransformDate(TransformSilverService):
                        )
         delta_table = self.delta_service.is_delta_table(self.dim_date_loc)
         if not delta_table:
-            self.spark_service.write_delta_table(dim_time_df, self.dim_date_loc)
+            self.spark_service.write_delta_table(dim_date_df, self.dim_date_loc)
         else:
-            self.delta_service.merge(delta_table, dim_time_df, "DateKey")
+            self.delta_service.merge(delta_table, dim_date_df, "DateKey")
