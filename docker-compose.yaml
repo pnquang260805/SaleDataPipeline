@@ -134,14 +134,12 @@ services:
     image: bitnami/kafka:4.0.0
     depends_on:
       - kafka
+    # my_connect_configs, my_connect_offsets, my_connect_statuses đều cần config cleanup.policy=compact
     command: |
-      kafka-topics.sh --create --if-not-exists --topic log_batch --bootstrap-server kafka:9092;
-      kafka-topics.sh --create --if-not-exists --topic redis_topic --bootstrap-server kafka:9092;
-      kafka-topics.sh --create --if-not-exists --topic log_stream --bootstrap-server kafka:9092;
-      kafka-topics.sh --create --if-not-exists --topic my_connect_configs --bootstrap-server kafka:9092;
-      kafka-topics.sh --create --if-not-exists --topic my_connect_offsets --bootstrap-server kafka:9092;
-      kafka-topics.sh --create --if-not-exists --topic my_connect_statuses --bootstrap-server kafka:9092;
-    
+      kafka-topics.sh --create --if-not-exists --topic my_connect_configs --bootstrap-server kafka:9092 --config cleanup.policy=compact;
+      kafka-topics.sh --create --if-not-exists --topic my_connect_offsets --bootstrap-server kafka:9092 --config cleanup.policy=compact;
+      kafka-topics.sh --create --if-not-exists --topic my_connect_statuses --bootstrap-server kafka:9092 --config cleanup.policy=compact;
+      kafka-topics.sh --create --if-not-exists --topic schema_changes --bootstrap-server kafka:9092 --config cleanup.policy=compact;
     networks:
       - project-net
 
@@ -247,6 +245,12 @@ services:
       MYSQL_USER: admin
       MYSQL_PASSWORD: admin
       MYSQL_DATABASE: commerce_db
+    # Change to Row binlog for suit with debezium
+    command: [
+      "--server-id=1",
+      "--log-bin=mysql-bin",
+      "--binlog-format=ROW",
+    ]
     networks:
       project-net:  
 
@@ -284,17 +288,19 @@ services:
     ports:
     - "7083:8083"
     networks:
-      project-net: 
+      project-net:
 
-  s3-service:
-    container_name: s3_services
-    build:
-      context: ./s3_service
-      dockerfile: s3.Dockerfile
+  debezium-init:
+    container_name: debezium-init
     networks:
       project-net:
+    build:
+      context: ./debezium_init
+      dockerfile: Dockerfile
+    depends_on:
+      - debezium-connect
     env_file:
-      - ./s3_service/.env
+      - ./debezium_init/.env
 
 networks:
   project-net:
