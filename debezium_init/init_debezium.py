@@ -29,7 +29,7 @@ data = {
         "database.server.id": "5401",
         "database.history.kafka.bootstrap.servers": f"{KAFKA_HOST}:{KAFKA_PORT}",
         "database.history.kafka.topic": "schema-changes",
-        "topic.prefix": "sales",  # tạo topic với prefix là dbserver1
+        "topic.prefix": "sales",  # tạo topic với prefix là sales
         "schema.history.internal.kafka.bootstrap.servers": "kafka:9092",
         "schema.history.internal.kafka.topic": "schema-changes",
     },

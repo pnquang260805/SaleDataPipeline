@@ -16,22 +16,20 @@ class DeltaService:
         self.spark = self.spark_service.get_spark()
         self.logger = logging
 
-    def __build_values(self, df: DataFrame):
-        cols = df.columns
-        res = {}
-        for col in cols:
-            res[col] = f"s.{col}"
-        return res
-
     @log
-    def merge(self, target: DeltaTable, source: DataFrame, conditions_col: str) -> None:
-        conditions = f"t.{conditions_col} = s.{conditions_col}"
+    def scd_type2(self, target: DeltaTable, source: DataFrame, condition: str, table_path : str) -> None:
         (
             target.alias("t")
-            .merge(source.alias("s"), conditions)
-            .whenNotMatchedInsert(values=self.__build_values(source))
+            .merge(source.alias("s"), condition)
+            .whenMatchedUpdate(
+                set = {
+                    "expiration_date": "s.update_date"
+                }
+            )
             .execute()
         )
+        self.spark_service.write_delta_table(source, table_path, mode="append")
+
 
     @log
     def get_delta_table(self, dir: str) -> DeltaTable:

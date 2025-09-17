@@ -46,15 +46,16 @@ def main() -> None:
     )
 
     datetime_service = container.datetime_service()
-    common_service = container.common_service()
     transform_datetime_service = container.transform_datetime_service()
-    transform_raw_service = container.transform_raw_service()
+    transform_raw_customer = container.transform_raw_customer()
 
     yesterday = datetime_service.get_yesterday()
 
-    url = f"s3a://bronze/orders/{yesterday}/*.json"
+    url = f"s3a://bronze/customers/{yesterday}/*.json"
 
-    # df = transform_raw_service.transform(url, f"s3a://silver/{yesterday}")
+    customer_df = transform_raw_customer.transform(
+        url, f"s3a://silver/customers/{yesterday}/"
+    )
     transform_datetime_service.transform()
 
 

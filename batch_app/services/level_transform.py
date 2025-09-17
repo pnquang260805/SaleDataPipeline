@@ -25,4 +25,4 @@ class Level(TransformSilverService):
             )
             return
         delta_table = self.delta_service.get_delta_table(self.ip_loc)
-        self.delta_service.merge(delta_table, level_df, "level")
+        self.delta_service.scd_type2(delta_table, level_df, "level")

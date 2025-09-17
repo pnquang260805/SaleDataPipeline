@@ -10,11 +10,11 @@ from pyspark.sql.types import StructType
 
 class SparkService:
     def __init__(
-            self,
-            conf: SparkConf,
-            extra_packages: List[str],
-            master: str,
-            app_name: str = "spark",
+        self,
+        conf: SparkConf,
+        extra_packages: List[str],
+        master: str,
+        app_name: str = "spark",
     ):
         builder = (
             SparkSession.builder.appName(app_name).master(master).config(conf=conf)
@@ -27,24 +27,24 @@ class SparkService:
     def get_spark(self):
         return self.spark
 
-    def read_file(
-            self, url: str, format: str, schema: StructType, *args, **kwargs
-    ) -> DataFrame:
-        df = self.spark.read.format(format).schema(schema).options(**kwargs).load(url)
+    def read_file(self, url: str, format: str, *args, **kwargs) -> DataFrame:
+        df = self.spark.read.format(format).options(**kwargs).load(url)
         return df
 
     @log
     def write_file(
-            self,
-            dir: str,
-            df: DataFrame,
-            format: str,
-            mode: str = "append",
-            *args,
-            **kwargs
+        self,
+        dir: str,
+        df: DataFrame,
+        format: str,
+        mode: str = "append",
+        *args,
+        **kwargs
     ) -> None:
         df.write.format(format).mode(mode).save(dir)
 
     @log
-    def write_delta_table(self, df : DataFrame, delta_table_path : str, mode : str = "overwrite"):
-            df.write.format("delta").mode(mode).save(delta_table_path)
+    def write_delta_table(
+        self, df: DataFrame, delta_table_path: str, mode: str = "overwrite"
+    ):
+        df.write.format("delta").mode(mode).save(delta_table_path)

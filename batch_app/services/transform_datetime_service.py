@@ -58,4 +58,4 @@ class TransformDate(TransformSilverService):
         if not delta_table:
             self.spark_service.write_delta_table(dim_date_df, self.dim_date_loc)
         else:
-            self.delta_service.merge(delta_table, dim_date_df, "DateKey")
+            self.delta_service.scd_type2(delta_table, dim_date_df, "DateKey")
