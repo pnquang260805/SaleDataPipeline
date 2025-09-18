@@ -217,6 +217,7 @@ services:
       - '8086:8080'
     volumes:
       - ./etc:/usr/lib/trino/etc:ro
+      - ./etc/catalog/sales.properties:/etc/trino/catalog/sales.properties # thêm dòng này để tự tạo các catalog
     networks:
       project-net:  
 
