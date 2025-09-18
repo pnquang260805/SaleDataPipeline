@@ -1,13 +1,10 @@
-import requests
-
+from datetime import datetime
 from dataclasses import dataclass
-from pyspark.sql import SparkSession
 from pyspark.sql.types import *
 from pyspark.sql import DataFrame
-from pyspark.sql.functions import col
+from pyspark.sql.functions import col, lit
 
 from utils.logger import log
-from services.common_service import CommonService
 from services.spark_service import SparkService
 
 
@@ -61,6 +58,9 @@ class TransformRawCustomer:
             col("source.db").alias("database"),
             col("source.table").alias("table"),
             col("ts_ms").alias("timestamp"),
+        )
+        silver_df = silver_df.withColumn(
+            "update_date", lit(datetime.now().strftime("%Y-%m-%d"))
         )
         self.spark_service.write_file(silver_dir, silver_df, saved_format)
         return silver_df

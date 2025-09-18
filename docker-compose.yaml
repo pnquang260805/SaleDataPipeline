@@ -212,7 +212,7 @@ services:
   trino:
     hostname: trino
     container_name: trino
-    image: 'trinodb/trino:351'
+    image: 'trinodb/trino:476'
     ports:
       - '8086:8080'
     volumes:
