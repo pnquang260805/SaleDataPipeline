@@ -41,7 +41,7 @@ class SparkService:
         *args,
         **kwargs
     ) -> None:
-        df.write.format(format).mode(mode).save(dir)
+        df.write.format(format).mode(mode).options(**kwargs).save(dir)
 
     @log
     def write_delta_table(

@@ -7,7 +7,7 @@ def log(func):
     console_handler = logging.StreamHandler()
     logger.setLevel("INFO")
     formatter = logging.Formatter(
-        "%(asctime)s %(levelname)s [" + func.__module__ + "] %(message)s"
+        "%(asctime)s %(levelname)s [" + func.__module__ + " .%(funcName)s] %(message)s"
     )
     file_handler = logging.FileHandler("./log/app.log", mode="a", encoding="utf-8")
     console_handler.setFormatter(formatter)

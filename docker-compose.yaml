@@ -55,6 +55,8 @@ services:
       - spark-master
     ports:
       - "8081:8081" # Worker UI
+    volumes:
+      - ./docker-data/spark-work/worker1:/opt/bitnami/spark/work
 
   spark-worker-2:
     build:
@@ -72,6 +74,8 @@ services:
       - spark-master
     ports:
       - "8082:8081" # Worker UI
+    volumes:
+      - ./docker-data/spark-work/worker2:/opt/bitnami/spark/work
 
   spark-worker-3:
     build:
@@ -89,6 +93,8 @@ services:
       - spark-master
     ports:
       - "8083:8081" # Worker UI
+    volumes:
+      - ./docker-data/spark-work/worker3:/opt/bitnami/spark/work
       
   superset:
     build:
@@ -234,6 +240,9 @@ services:
       MYSQL_DATABASE: metastore_db
     networks:
       project-net:  
+    volumes:
+      - ./mysql_config/mysql.cnf:/etc/mysql/conf.d/custom.cnf
+      - ./docker-data/metastore:/var/lib/mysql
 
   backend_db:
     hostname: backend_db
@@ -254,6 +263,8 @@ services:
     ]
     networks:
       project-net:  
+    volumes:
+      - ./mysql_config/mysql.cnf:/etc/mysql/conf.d/custom.cnf
 
   hive-metastore:
     hostname: hive-metastore
@@ -302,6 +313,20 @@ services:
       - debezium-connect
     env_file:
       - ./debezium_init/.env
+
+  batch:
+    build:
+      context: ./batch_app
+      dockerfile: Dockerfile
+    container_name: batch-app
+    networks:
+      project-net:
+    # depends_on:
+    #   - minio
+    #   - debezium-connect
+    #   - spark-master
+    env_file:
+      - .env
 
 networks:
   project-net:

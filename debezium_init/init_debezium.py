@@ -32,6 +32,8 @@ data = {
         "topic.prefix": "sales",  # tạo topic với prefix là sales
         "schema.history.internal.kafka.bootstrap.servers": "kafka:9092",
         "schema.history.internal.kafka.topic": "schema-changes",
+        "max.batch.size": "2048",
+        "max.queue.size": "8192",
     },
 }
 

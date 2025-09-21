@@ -46,16 +46,23 @@ def main() -> None:
     )
 
     datetime_service = container.datetime_service()
-    transform_datetime_service = container.transform_datetime_service()
-    transform_raw_customer = container.transform_raw_customer()
-
     yesterday = datetime_service.get_yesterday()
 
-    url = f"s3a://bronze/customers/{yesterday}/*.json"
+    logger.info("Starting transform customer")
+    # transform customer to warehouse
+    transform_raw_customer = container.transform_raw_customer()
+    transform_customer_service = container.transform_customer_service()
 
+    customer_raw_url = f"s3a://bronze/customers/{yesterday}/*.json"
     customer_df = transform_raw_customer.transform(
-        url, f"s3a://silver/customers/{yesterday}/"
+        customer_raw_url, f"s3a://silver/customers/{yesterday}/"
     )
+
+    transform_customer_service.transform(customer_df)
+
+    # Transform datetime
+    logger.info("Starting transform datetime")
+    transform_datetime_service = container.transform_datetime_service()
     transform_datetime_service.transform()
 
 

@@ -3,6 +3,7 @@ import logging
 from dataclasses import dataclass
 from delta.tables import DeltaTable
 from pyspark.sql import DataFrame
+from pyspark.sql.functions import col, lit
 
 from services.spark_service import SparkService
 from utils.logger import log
@@ -17,19 +18,21 @@ class DeltaService:
         self.logger = logging
 
     @log
-    def scd_type2(self, target: DeltaTable, source: DataFrame, condition: str, table_path : str) -> None:
+    def scd_type2(
+        self, target: DeltaTable, source: DataFrame, condition: str, table_path: str
+    ) -> None:
         (
             target.alias("t")
             .merge(source.alias("s"), condition)
             .whenMatchedUpdate(
-                set = {
-                    "expiration_date": "s.update_date"
+                set={
+                    "expiration_date": col("s.effective_date"),
+                    "is_current": lit(False),
                 }
             )
             .execute()
         )
         self.spark_service.write_delta_table(source, table_path, mode="append")
-
 
     @log
     def get_delta_table(self, dir: str) -> DeltaTable:

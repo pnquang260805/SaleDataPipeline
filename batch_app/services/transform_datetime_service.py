@@ -10,12 +10,13 @@ from utils.logger import log
 from services.delta_services import DeltaService
 from services.spark_service import SparkService
 
+
 @dataclass
 class TransformDate(TransformSilverService):
     delta_service: DeltaService
     dim_date_loc: str = "s3a://warehouse/default/dim_date"
-    sql_dim_loc : str = "default.dim_date"
-    spark_service : SparkService
+    sql_dim_loc: str = "sales.dim_date"
+    spark_service: SparkService
 
     def __post_init__(self):
         self.logger = logging
@@ -23,7 +24,7 @@ class TransformDate(TransformSilverService):
 
     @log
     def transform(self):
-        yesterday = (datetime.now() - timedelta(days=1))
+        yesterday = datetime.now() - timedelta(days=1)
         month_dict = {
             1: "January",
             2: "February",
@@ -36,26 +37,26 @@ class TransformDate(TransformSilverService):
             9: "September",
             10: "October",
             11: "November",
-            12: "December"
+            12: "December",
         }
+        alternate_key_col = "full_date_alternate_key"
         data = {
-            "DateKey": yesterday.strftime("%Y%m%d"),
-            "FullDateAlternateKey": yesterday.strftime("%Y-%m-%d"),
+            "date_key": yesterday.strftime("%Y%m%d"),
+            "full_date_alternate_key": yesterday.strftime("%Y-%m-%d"),
         }
         df = self.spark.createDataFrame([data])
-        alternate_key_col = "FullDateAlternateKey"
-        dim_date_df = (df.withColumn("DayNumberOfWeek", dayofweek(alternate_key_col))
-                       .withColumn("DayNameOfWeek", date_format(alternate_key_col, "EEEE"))
-                       .withColumn("DayNumberOfMonth", dayofmonth(alternate_key_col))
-                       .withColumn("DayNumberOfYear", dayofyear(alternate_key_col))
-                       .withColumn("WeekNumberOfYear", weekofyear(alternate_key_col))
-                       .withColumn("MonthNumber", month(alternate_key_col))
-                       .withColumn("MonthName", lit(month_dict[int(yesterday.strftime("%m"))]))
-                       .withColumn("CalendarQuarter", quarter(alternate_key_col))
-                       .withColumn("CalenderYear", year(alternate_key_col))
-                       )
-        delta_table = self.delta_service.is_delta_table(self.dim_date_loc)
-        if not delta_table:
-            self.spark_service.write_delta_table(dim_date_df, self.dim_date_loc)
-        else:
-            self.delta_service.scd_type2(delta_table, dim_date_df, "DateKey")
+        dim_date_df = (
+            df.withColumn("day_number_of_week", dayofweek(alternate_key_col))
+            .withColumn("day_name_of_week", date_format(alternate_key_col, "EEEE"))
+            .withColumn("day_number_of_month", dayofmonth(alternate_key_col))
+            .withColumn("day_number_of_year", dayofyear(alternate_key_col))
+            .withColumn("week_number_of_year", weekofyear(alternate_key_col))
+            .withColumn("month_number", month(alternate_key_col))
+            .withColumn("month_name", lit(month_dict[int(yesterday.strftime("%m"))]))
+            .withColumn("calendar_quarter", quarter(alternate_key_col))
+            .withColumn("calender_year", year(alternate_key_col))
+        )
+        dim_date_df = dim_date_df.dropDuplicates()
+        self.spark_service.write_delta_table(
+            dim_date_df, self.sql_dim_loc, mode="append"
+        )
