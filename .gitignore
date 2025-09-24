@@ -13,3 +13,4 @@ __pycache__/
 /**/.ipynb_checkpoints
 metastore_db/
 /change_to_af
+/default.*
