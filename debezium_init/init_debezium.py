@@ -23,7 +23,6 @@ data = {
         "database.port": PORT,
         "database.user": db_username,
         "database.password": db_password,
-        "database.dbname": db_name,
         "database.server.name": "maria_server",
         # "table.include.list": "public.orders",
         "database.server.id": "5401",
@@ -34,6 +33,7 @@ data = {
         "schema.history.internal.kafka.topic": "schema-changes",
         "max.batch.size": "2048",
         "max.queue.size": "8192",
+        "database.include.list": "commerce_db",
     },
 }
 
