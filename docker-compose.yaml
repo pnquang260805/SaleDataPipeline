@@ -47,16 +47,12 @@ services:
     environment:
       - SPARK_MODE=worker
       - SPARK_MASTER_URL=spark://spark-master:7077
-      - SPARK_WORKER_CORES=1 
-      - SPARK_WORKER_MEMORY=1G 
     networks:
       - project-net
     depends_on:
       - spark-master
     ports:
-      - "8081:8081" # Worker UI
-    volumes:
-      - ./docker-data/spark-work/worker1:/opt/bitnami/spark/work
+      - "8081:8081" 
 
   spark-worker-2:
     build:
@@ -66,16 +62,12 @@ services:
     environment:
       - SPARK_MODE=worker
       - SPARK_MASTER_URL=spark://spark-master:7077
-      - SPARK_WORKER_CORES=1 
-      - SPARK_WORKER_MEMORY=1G 
     networks:
       - project-net
     depends_on:
       - spark-master
     ports:
       - "8082:8081" # Worker UI
-    volumes:
-      - ./docker-data/spark-work/worker2:/opt/bitnami/spark/work
 
   spark-worker-3:
     build:
@@ -85,16 +77,12 @@ services:
     environment:
       - SPARK_MODE=worker
       - SPARK_MASTER_URL=spark://spark-master:7077
-      - SPARK_WORKER_CORES=1 
-      - SPARK_WORKER_MEMORY=1G 
     networks:
       - project-net
     depends_on:
       - spark-master
     ports:
       - "8083:8081" # Worker UI
-    volumes:
-      - ./docker-data/spark-work/worker3:/opt/bitnami/spark/work
       
   superset:
     build:
@@ -112,18 +100,17 @@ services:
     
 
   kafka:
-    image: bitnami/kafka:4.0.0
+    image: apache/kafka:4.1.0
     container_name: kafka
-    volumes:
-      - ./docker-data/kafka:/bitnami/kafka
     environment:
-      - KAFKA_CFG_NODE_ID=0
-      - KAFKA_CFG_PROCESS_ROLES=controller,broker
-      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka:9093
-      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094
-      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092,EXTERNAL://localhost:9094
-      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT
-      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_NODE_ID=0
+      - KAFKA_PROCESS_ROLES=controller,broker
+      - KAFKA_CONTROLLER_QUORUM_VOTERS=0@kafka:9093
+      - KAFKA_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092,EXTERNAL://localhost:9094
+      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      - KAFKA_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
     ports:
       - "9092:9092"
       - "9093:9093"
@@ -137,15 +124,15 @@ services:
           memory: 1g
 
   kafka-init:
-    image: bitnami/kafka:4.0.0
+    image: apache/kafka:4.1.0
     depends_on:
       - kafka
     # my_connect_configs, my_connect_offsets, my_connect_statuses đều cần config cleanup.policy=compact
     command: |
-      kafka-topics.sh --create --if-not-exists --topic my_connect_configs --bootstrap-server kafka:9092 --config cleanup.policy=compact;
-      kafka-topics.sh --create --if-not-exists --topic my_connect_offsets --bootstrap-server kafka:9092 --config cleanup.policy=compact;
-      kafka-topics.sh --create --if-not-exists --topic my_connect_statuses --bootstrap-server kafka:9092 --config cleanup.policy=compact;
-      kafka-topics.sh --create --if-not-exists --topic schema_changes --bootstrap-server kafka:9092 --config cleanup.policy=compact;
+      /opt/kafka/bin/kafka-topics.sh --create --if-not-exists --topic my_connect_configs --bootstrap-server kafka:9092 --config cleanup.policy=compact;
+      /opt/kafka/bin/kafka-topics.sh --create --if-not-exists --topic my_connect_offsets --bootstrap-server kafka:9092 --config cleanup.policy=compact;
+      /opt/kafka/bin/kafka-topics.sh --create --if-not-exists --topic my_connect_statuses --bootstrap-server kafka:9092 --config cleanup.policy=compact;
+      /opt/kafka/bin/kafka-topics.sh --create --if-not-exists --topic schema_changes --bootstrap-server kafka:9092 --config cleanup.policy=compact;
     networks:
       - project-net
 
@@ -289,7 +276,6 @@ services:
     - kafka
     - backend_db
     environment:
-      BOOTSTRAP_SERVERS: kafka:9092
       GROUP_ID: 1
       CONFIG_STORAGE_TOPIC: my_connect_configs
       OFFSET_STORAGE_TOPIC: my_connect_offsets
@@ -298,6 +284,8 @@ services:
       VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
       VALUE_CONVERTER_SCHEMAS_ENABLE: "false"
       KEY_CONVERTER_SCHEMAS_ENABLE: "false"
+      BOOTSTRAP_SERVERS: kafka:9092
+      VALUE_CONVERTER_DECIMAL_HANDLING_MODE: double # tránh cho việc bị chuyển float sang string base 64
     ports:
     - "7083:8083"
     networks:
