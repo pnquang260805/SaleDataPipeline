@@ -45,6 +45,7 @@ class TransformDate(TransformSilverService):
             "full_date_alternate_key": yesterday.strftime("%Y-%m-%d"),
         }
         df = self.spark.createDataFrame([data])
+        df = df.withColumn("full_date_alternate_key", to_date(col("full_date_alternate_key"), "yyyy-MM-dd"))
         dim_date_df = (
             df.withColumn("day_number_of_week", dayofweek(alternate_key_col))
             .withColumn("day_name_of_week", date_format(alternate_key_col, "EEEE"))
@@ -54,9 +55,9 @@ class TransformDate(TransformSilverService):
             .withColumn("month_number", month(alternate_key_col))
             .withColumn("month_name", lit(month_dict[int(yesterday.strftime("%m"))]))
             .withColumn("calendar_quarter", quarter(alternate_key_col))
-            .withColumn("calender_year", year(alternate_key_col))
+            .withColumn("calendar_year", year(alternate_key_col))
         )
         dim_date_df = dim_date_df.dropDuplicates()
         self.spark_service.write_delta_table(
-            dim_date_df, self.sql_dim_loc, mode="append"
+            dim_date_df, self.dim_date_loc, mode="append"
         )

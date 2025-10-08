@@ -2,7 +2,7 @@ from datetime import datetime
 from dataclasses import dataclass
 from pyspark.sql.types import *
 from pyspark.sql import DataFrame
-from pyspark.sql.functions import col, lit
+from pyspark.sql.functions import *
 
 from utils.logger import log
 from services.spark_service import SparkService
@@ -35,6 +35,9 @@ class TransformRawCustomer:
         )
         raw_df = raw_df.select(col("payload.*"))
         # raw_df.show(truncate=False)
+        after_cols = raw_df.schema["after"].dataType.fields
+        before_struct = struct(*[lit(None).cast(f.dataType).alias(f.name) for f in after_cols])
+        raw_df = raw_df.withColumn("before", before_struct)
         silver_df = raw_df.select(
             col("after.ID").alias("id"),
             col("before.FirstName").alias("first_name_before"),
