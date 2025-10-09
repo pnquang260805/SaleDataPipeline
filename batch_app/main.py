@@ -62,10 +62,12 @@ def main() -> None:
 
     # Transform products
     transform_raw_product = container.transform_raw_products()
+    transform_product_service = container.transform_product_service()
     product_raw_url = f"s3a://bronze/products/{yesterday}/*.json"
     product_df = transform_raw_product.transform(
         product_raw_url, f"s3a://silver/products/{yesterday}/"
     )
+    transform_product_service.transform(product_df)
 
     # Transform datetime
     logger.info("Starting transform datetime")

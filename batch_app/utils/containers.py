@@ -9,6 +9,7 @@ from services.delta_services import DeltaService
 from services.transform_datetime_service import TransformDate
 from services.transform_customer_service import TransformCustomer
 from services.transform_raw_products import TransformRawProduct
+from services.transform_products_service import TransformProduct
 
 
 class Containers(containers.DeclarativeContainer):
@@ -19,7 +20,8 @@ class Containers(containers.DeclarativeContainer):
     transform_raw_customer = providers.Factory(
         TransformRawCustomer, spark_service=spark_service
     )
-    delta_service = providers.Factory(DeltaService, spark_service=spark_service)
+    delta_service = providers.Factory(
+        DeltaService, spark_service=spark_service)
     transform_datetime_service = providers.Factory(
         TransformDate, spark_service=spark_service, delta_service=delta_service
     )
@@ -30,3 +32,6 @@ class Containers(containers.DeclarativeContainer):
     transform_raw_products = providers.Factory(
         TransformRawProduct, spark_service=spark_service
     )
+
+    transform_product_service = providers.Factory(
+        TransformProduct, spark_service=spark_service, delta_service=delta_service)
