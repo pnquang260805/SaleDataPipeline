@@ -1,0 +1,1 @@
+0 0 * * * python /code/app/main_customer.py >> /code/log/customer.log 2>&1

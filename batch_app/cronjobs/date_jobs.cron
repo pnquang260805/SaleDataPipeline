@@ -1,0 +1,1 @@
+0 0 1 1 * python /code/app/main_datetime.py >> /code/app/log/datetime.log 2>&1

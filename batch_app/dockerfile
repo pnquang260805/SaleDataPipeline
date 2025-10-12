@@ -4,7 +4,7 @@ ARG hadoop_version=3.3.4
 ARG bundle_version=1.12.598
 
 RUN apt-get update && \
-    apt-get install -y openjdk-17-jdk curl iputils-ping && \
+    apt-get install -y openjdk-17-jdk curl iputils-ping cron && \
     rm -rf /var/lib/apt/lists/*
 ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
 ENV PATH=$JAVA_HOME/bin:$PATH
@@ -13,7 +13,11 @@ WORKDIR /code
 COPY ./requirements.txt .
 RUN pip install -r ./requirements.txt
 
+COPY ./cronjobs/*.cron /etc/cron.d/
+RUN chmod 0644 /etc/cron.d/*.cron 
+
 COPY . /code/app
 RUN mkdir /code/log
-CMD ["python", "/code/app/main.py"]
+# CMD ["python", "/code/app/main.py"]
+CMD ["cron", "-f"]
 # CMD ["tail", "-f", "/dev/null"]

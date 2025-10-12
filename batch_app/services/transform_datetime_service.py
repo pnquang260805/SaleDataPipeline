@@ -23,8 +23,7 @@ class TransformDate(TransformSilverService):
         self.spark = self.spark_service.get_spark()
 
     @log
-    def transform(self):
-        yesterday = datetime.now() - timedelta(days=1)
+    def transform(self, day : datetime):
         month_dict = {
             1: "January",
             2: "February",
@@ -41,8 +40,8 @@ class TransformDate(TransformSilverService):
         }
         alternate_key_col = "full_date_alternate_key"
         data = {
-            "date_key": yesterday.strftime("%Y%m%d"),
-            "full_date_alternate_key": yesterday.strftime("%Y-%m-%d"),
+            "date_key": day.strftime("%Y%m%d"),
+            "full_date_alternate_key": day.strftime("%Y-%m-%d"),
         }
         df = self.spark.createDataFrame([data])
         df = df.withColumn("full_date_alternate_key", to_date(col("full_date_alternate_key"), "yyyy-MM-dd"))
@@ -53,7 +52,7 @@ class TransformDate(TransformSilverService):
             .withColumn("day_number_of_year", dayofyear(alternate_key_col))
             .withColumn("week_number_of_year", weekofyear(alternate_key_col))
             .withColumn("month_number", month(alternate_key_col))
-            .withColumn("month_name", lit(month_dict[int(yesterday.strftime("%m"))]))
+            .withColumn("month_name", lit(month_dict[int(day.strftime("%m"))]))
             .withColumn("calendar_quarter", quarter(alternate_key_col))
             .withColumn("calendar_year", year(alternate_key_col))
         )

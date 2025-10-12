@@ -38,20 +38,6 @@ def main() -> None:
 
     transform_customer_service.transform(customer_df)
 
-    # Transform products
-    transform_raw_product = container.transform_raw_products()
-    transform_product_service = container.transform_product_service()
-    product_raw_url = f"s3a://bronze/products/{yesterday}/*.json"
-    product_df = transform_raw_product.transform(
-        product_raw_url, f"s3a://silver/products/{yesterday}/"
-    )
-    transform_product_service.transform(product_df)
-
-    # Transform datetime
-    logger.info("Starting transform datetime")
-    transform_datetime_service = container.transform_datetime_service()
-    transform_datetime_service.transform()
-
 
 if __name__ == "__main__":
     main()
